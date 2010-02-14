@@ -17,8 +17,8 @@
 #AutoIt3Wrapper_Res_Field=Build Date|%date%
 #AutoIt3Wrapper_Res_Comment=http://code.google.com/p/anydvd-rip-wrapper/
 #AutoIt3Wrapper_Res_Description=Automates Ripping DVDs with AnyDVD
-#AutoIt3Wrapper_Res_Fileversion=0.9.15
-#AutoIt3Wrapper_Res_ProductVersion=0.9.15
+#AutoIt3Wrapper_Res_Fileversion=0.9.16
+#AutoIt3Wrapper_Res_ProductVersion=0.9.16
 #AutoIt3Wrapper_Res_Language=1033
 #AutoIt3Wrapper_Res_LegalCopyright=GPL
 #AutoIt3Wrapper_res_requestedExecutionLevel=highestAvailable
@@ -29,7 +29,7 @@
 OnAutoItExitRegister("cleanUp")
 
 Global $g_szName = "AnyDVD Rip Wrapper"
-Global $g_szVersion = "0.9.15"
+Global $g_szVersion = "0.9.16"
 Global $g_szTitle = $g_szName & " " & $g_szVersion
 Global $__gsReportWindowTitle_Debug = $g_szTitle
 Local $dvd_drive = ""
@@ -54,14 +54,32 @@ If FileExists($_ProgramFilesDir) == 0 Then
 	$_ProgramFilesDir = @ProgramFilesDir
 EndIf
 
-FileInstall("AnyTool.exe", $_ProgramFilesDir & "\SlySoft\AnyDVD\")
-FileInstall("tcclone.exe", $_ProgramFilesDir & "\SlySoft\AnyDVD\")
+$retVal = FileInstall(".\AnyTool.exe", $_ProgramFilesDir & "\SlySoft\AnyDVD\")
+If $retVal == 0 Then
+	_MsgBox("There was a problem extracting the required file AnyTool.exe. Please report this error.")
+	Exit 1
+EndIf
+$retVal = FileInstall(".\tcclone.exe", $_ProgramFilesDir & "\SlySoft\AnyDVD\")
+If $retVal == 0 Then
+	_MsgBox("There was a problem extracting the required file tcclone.exe. Please report this error.")
+	Exit 1
+EndIf
 
 _ConsoleWrite($g_szTitle & @CRLF);
 _ConsoleWrite(@CRLF);
 
-If FileExists(@ProgramFilesDir & "\SlySoft\AnyDVD\AnyDVD.exe") == 0 Then
+If FileExists($_ProgramFilesDir & "\SlySoft\AnyDVD\AnyDVD.exe") == 0 Then
 	_MsgBox("AnyDVD not found in " & $_ProgramFilesDir & "\SlySoft\AnyDVD!" & @LF & "AnyDVD must be installed for this tool to work." & @LF & @LF & "Please install AnyDVD and try again.")
+	Exit 1
+EndIf
+
+If FileExists($_ProgramFilesDir & "\SlySoft\AnyDVD\AnyTool.exe") == 0 Then
+	_MsgBox("AnyTool was not found even though extraction appeared to have worked. Please report this error.")
+	Exit 1
+EndIf
+
+If FileExists($_ProgramFilesDir & "\SlySoft\AnyDVD\tcclone.exe") == 0 Then
+	_MsgBox("AnyTool was not found even though extraction appeared to have worked. Please report this error.")
 	Exit 1
 EndIf
 
@@ -206,6 +224,10 @@ _ConsoleWriteCRLF("Toggling AnyDVD to Scan inserted disc.")
 RunWait('"' & $_ProgramFilesDir & '\SlySoft\AnyDVD\AnyTool.exe" -d', @SystemDir, @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD)
 ;; Enable AnyDVD
 RunWait('"' & $_ProgramFilesDir & '\SlySoft\AnyDVD\AnyTool.exe" -e', @SystemDir, @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD)
+If @error Then
+	_MsgBox("Unable to control AnyDVD! Please report this error.")
+	Exit 1
+EndIf
 _ConsoleWriteCRLF("Waiting for Drive to become ready...")
 Do
 	Sleep(500);
@@ -268,6 +290,7 @@ If ($rip_how == "MENU" Or $rip_how == "MAIN") Then
 		_MsgBox("Unable to determine the Main Movie Title ID!")
 		Exit 1
 	EndIf
+	$pid = -1
 EndIf
 
 ;; AnyDVD
@@ -282,6 +305,11 @@ Select
 		_ConsoleWriteCRLF("Starting rip for Main Movie (DVD Title: " & $mainDvdTitle & ")...")
 		$pid = Run('"' & $_ProgramFilesDir & '\SlySoft\AnyDVD\tcclone.exe" --force --remux --outpath ' & $final_path & ' ' & $dvd_drive & '\VIDEO_TS ' & $mainDvdTitle, @SystemDir, @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD)
 EndSelect
+
+If @error Then
+	_MsgBox("Unable to start Rip! Please report this error.")
+	Exit 1
+EndIf
 
 _ConsoleWriteCRLF("")
 
