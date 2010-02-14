@@ -16,9 +16,9 @@
 #AutoIt3Wrapper_Res_Field=Homepage|http://code.google.com/p/anydvd-rip-wrapper/
 #AutoIt3Wrapper_Res_Field=Build Date|%date%
 #AutoIt3Wrapper_Res_Comment=http://code.google.com/p/anydvd-rip-wrapper/
-#AutoIt3Wrapper_Res_Description=Automates Ripping DVDs with AnyDVD
-#AutoIt3Wrapper_Res_Fileversion=0.9.16
-#AutoIt3Wrapper_Res_ProductVersion=0.9.16
+#AutoIt3Wrapper_Res_Description=AnyDVD Rip Wrapper
+#AutoIt3Wrapper_Res_Fileversion=0.9.17
+#AutoIt3Wrapper_Res_ProductVersion=0.9.17
 #AutoIt3Wrapper_Res_Language=1033
 #AutoIt3Wrapper_Res_LegalCopyright=GPL
 #AutoIt3Wrapper_res_requestedExecutionLevel=highestAvailable
@@ -29,7 +29,7 @@
 OnAutoItExitRegister("cleanUp")
 
 Global $g_szName = "AnyDVD Rip Wrapper"
-Global $g_szVersion = "0.9.16"
+Global $g_szVersion = "0.9.17"
 Global $g_szTitle = $g_szName & " " & $g_szVersion
 Global $__gsReportWindowTitle_Debug = $g_szTitle
 Local $dvd_drive = ""
@@ -54,33 +54,32 @@ If FileExists($_ProgramFilesDir) == 0 Then
 	$_ProgramFilesDir = @ProgramFilesDir
 EndIf
 
-$retVal = FileInstall(".\AnyTool.exe", $_ProgramFilesDir & "\SlySoft\AnyDVD\")
-If $retVal == 0 Then
-	_MsgBox("There was a problem extracting the required file AnyTool.exe. Please report this error.")
-	Exit 1
-EndIf
-$retVal = FileInstall(".\tcclone.exe", $_ProgramFilesDir & "\SlySoft\AnyDVD\")
-If $retVal == 0 Then
-	_MsgBox("There was a problem extracting the required file tcclone.exe. Please report this error.")
-	Exit 1
-EndIf
 
 _ConsoleWrite($g_szTitle & @CRLF);
 _ConsoleWrite(@CRLF);
 
 If FileExists($_ProgramFilesDir & "\SlySoft\AnyDVD\AnyDVD.exe") == 0 Then
+	Local $hGUI
 	_MsgBox("AnyDVD not found in " & $_ProgramFilesDir & "\SlySoft\AnyDVD!" & @LF & "AnyDVD must be installed for this tool to work." & @LF & @LF & "Please install AnyDVD and try again.")
 	Exit 1
 EndIf
 
 If FileExists($_ProgramFilesDir & "\SlySoft\AnyDVD\AnyTool.exe") == 0 Then
-	_MsgBox("AnyTool was not found even though extraction appeared to have worked. Please report this error.")
-	Exit 1
+	$retVal = FileInstall(".\AnyTool.exe", $_ProgramFilesDir & "\SlySoft\AnyDVD\")
+	If $retVal == 0 Then
+		Local $hGUI
+		_MsgBox("There was a problem extracting the required file AnyTool.exe. Please report this error.")
+		Exit 1
+	EndIf
 EndIf
 
 If FileExists($_ProgramFilesDir & "\SlySoft\AnyDVD\tcclone.exe") == 0 Then
-	_MsgBox("AnyTool was not found even though extraction appeared to have worked. Please report this error.")
-	Exit 1
+	$retVal = FileInstall(".\tcclone.exe", $_ProgramFilesDir & "\SlySoft\AnyDVD\")
+	If $retVal == 0 Then
+		Local $hGUI
+		_MsgBox("There was a problem extracting the required file tcclone.exe. Please report this error.")
+		Exit 1
+	EndIf
 EndIf
 
 If (IsArray($CmdLine) And $CmdLine[0] > 0) Then
@@ -169,11 +168,9 @@ If ($dvd_drive == "" Or $net_path == "") Then
 		EndIf
 		$cd = StringUpper($cdroms[$i] & "\ [" & StringStripWS($cdLabel, 3) & "]")
 		_GUICtrlComboBox_AddString($hCombo, $cd)
-
 	Next
 	_GUICtrlComboBox_EndUpdate($hCombo)
 	_GUICtrlComboBox_SetCurSel($hCombo, 0)
-	;GUIRegisterMsg($WM_COMMAND, "WM_COMMAND")
 
 	; Loop until user exits
 	While 1
@@ -212,7 +209,7 @@ If ($dvd_drive == "" Or $net_path == "") Then
 				EndIf
 			Case $_guiMsg = $btnCancel
 				GUIDelete()
-				Exit
+				Exit 0
 		EndSelect
 	WEnd
 EndIf
@@ -228,6 +225,7 @@ If @error Then
 	_MsgBox("Unable to control AnyDVD! Please report this error.")
 	Exit 1
 EndIf
+
 _ConsoleWriteCRLF("Waiting for Drive to become ready...")
 Do
 	Sleep(500);
@@ -297,17 +295,32 @@ EndIf
 Select
 	Case $rip_how = "FULL"
 		_ConsoleWriteCRLF("Starting rip for whole DVD...")
-		$pid = Run('"' & $_ProgramFilesDir & '\SlySoft\AnyDVD\tcclone.exe" --force --remux --outpath ' & $final_path & ' ' & $dvd_drive & '\VIDEO_TS all', @SystemDir, @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD)
+		Local $_toRun = '"' & $_ProgramFilesDir & '\SlySoft\AnyDVD\tcclone.exe" --force --remux --outpath ' & $final_path & ' ' & $dvd_drive & '\VIDEO_TS all'
 	Case $rip_how = "MENU"
 		_ConsoleWriteCRLF("Starting rip for Main Movie (DVD Title: " & $mainDvdTitle & ") + Menus...")
-		$pid = Run('"' & $_ProgramFilesDir & '\SlySoft\AnyDVD\tcclone.exe" --force --menus --remux --outpath ' & $final_path & ' ' & $dvd_drive & '\VIDEO_TS ' & $mainDvdTitle, @SystemDir, @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD)
+		Local $_toRun = '"' & $_ProgramFilesDir & '\SlySoft\AnyDVD\tcclone.exe" --force --menus --remux --outpath ' & $final_path & ' ' & $dvd_drive & '\VIDEO_TS ' & $mainDvdTitle
 	Case $rip_how = "MAIN"
 		_ConsoleWriteCRLF("Starting rip for Main Movie (DVD Title: " & $mainDvdTitle & ")...")
-		$pid = Run('"' & $_ProgramFilesDir & '\SlySoft\AnyDVD\tcclone.exe" --force --remux --outpath ' & $final_path & ' ' & $dvd_drive & '\VIDEO_TS ' & $mainDvdTitle, @SystemDir, @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD)
+		Local $_toRun = '"' & $_ProgramFilesDir & '\SlySoft\AnyDVD\tcclone.exe" --force --remux --outpath ' & $final_path & ' ' & $dvd_drive & '\VIDEO_TS ' & $mainDvdTitle
 EndSelect
 
-If @error Then
-	_MsgBox("Unable to start Rip! Please report this error.")
+$pid = Run($_toRun, @SystemDir, @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD)
+
+Sleep(1500) ;Just in-case the process starts and exits fast enough for the next eval to pass
+
+If $pid <= 0 Or ProcessExists($pid) == 0 Then
+	$_msg = "Unable to start Rip! Please report this error"
+	$STDOUT = StdoutRead($pid)
+	$STDERR = StderrRead($pid)
+	If $STDOUT <> "" And $STDERR == "" Then
+		$_msg &= ": " & @LF & $STDOUT
+	ElseIf $STDOUT == "" And $STDERR <> "" Then
+		$_msg &= ": " & @LF & $STDERR
+	ElseIf $STDOUT <> "" And $STDERR <> "" Then
+		$_msg &= ": " & @LF & $STDOUT & @LF & $STDERR
+	EndIf
+	$_msg &= @LF & "Command: " & $_toRun
+	_MsgBox($_msg)
 	Exit 1
 EndIf
 
@@ -317,27 +330,31 @@ Local $STDOUT
 Local $progress
 If IsDeclared("hGUI") Then
 	ProgressOn("Rip Progress", "", "", -1, -1, 18)
-	While 1
-		$STDOUT = StdoutRead($pid)
-		If @error Then ExitLoop
-		$progress = StringRegExp($STDOUT, "P (\d+)% (ts.*)", 1)
-		If IsArray($progress) Then
-			ProgressSet(Int($progress[0]), String(Int($progress[0])) & "%" & @CRLF & $progress[1])
-		EndIf
-	WEnd
-Else
-	While 1
-		$STDOUT = StdoutRead($pid)
-		If @error Then ExitLoop
-		$progress = StringRegExp($STDOUT, "P (\d+)% (ts.*)", 1)
-		If IsArray($progress) Then
-			_ConsoleWrite(@CR & String(Int($progress[0])) & "% " & $progress[1])
-		EndIf
-	WEnd
+	ProgressSet(0, "0%")
 EndIf
 
+While 1
+	$_tccloneCrashDetect = ProcessWaitClose($pid, 1)
+	If $_tccloneCrashDetect == 1 Then
+		If @extended <> 0 Then
+			_MsgBox("Possible crash in TCClone. Please report this error." & @LF & "Exited with error code: " & @extended & @LF & "Command: " & $_toRun)
+			Exit 1
+		EndIf
+	EndIf
+	$STDOUT = StdoutRead($pid)
+	If @error Then ExitLoop
+	$progress = StringRegExp($STDOUT, "P (\d+)% (ts.*)", 1)
+	If IsArray($progress) Then
+		Select
+			Case IsDeclared("hGUI") <> 0
+				ProgressSet(Int($progress[0]), String(Int($progress[0])) & "%" & @CRLF & $progress[1])
+			Case IsDeclared("hGUI") == 0
+				_ConsoleWrite(@CR & String(Int($progress[0])) & "% " & $progress[1])
+		EndSelect
+	EndIf
+WEnd
+
 ProcessWaitClose($pid)
-Sleep(500)
 _ConsoleWriteCRLF("")
 _ConsoleWriteCRLF("Rip Done!")
 Sleep(500)
