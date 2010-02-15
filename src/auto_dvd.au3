@@ -17,8 +17,8 @@
 #AutoIt3Wrapper_Res_Field=Build Date|%date%
 #AutoIt3Wrapper_Res_Comment=http://code.google.com/p/anydvd-rip-wrapper/
 #AutoIt3Wrapper_Res_Description=AnyDVD Rip Wrapper
-#AutoIt3Wrapper_Res_Fileversion=0.9.17
-#AutoIt3Wrapper_Res_ProductVersion=0.9.17
+#AutoIt3Wrapper_Res_Fileversion=0.9.18
+#AutoIt3Wrapper_Res_ProductVersion=0.9.18
 #AutoIt3Wrapper_Res_Language=1033
 #AutoIt3Wrapper_Res_LegalCopyright=GPL
 #AutoIt3Wrapper_res_requestedExecutionLevel=highestAvailable
@@ -29,7 +29,7 @@
 OnAutoItExitRegister("cleanUp")
 
 Global $g_szName = "AnyDVD Rip Wrapper"
-Global $g_szVersion = "0.9.17"
+Global $g_szVersion = "0.9.18"
 Global $g_szTitle = $g_szName & " " & $g_szVersion
 Global $__gsReportWindowTitle_Debug = $g_szTitle
 Local $dvd_drive = ""
@@ -200,7 +200,7 @@ If ($dvd_drive == "" Or $net_path == "") Then
 				If DriveStatus($dvd_drive) <> "READY" Then
 					_MsgBox("Selected DVD Drive does not appear to have a disc loaded!")
 				ElseIf FileExists($net_path) <> 1 Then
-					_MsgBox("Target path does not appear to exist!")
+					_MsgBox("Specified Target Path does not exist!")
 				ElseIf $rip_how == "" Then
 					_MsgBox("Please select what to save from your DVD!")
 				Else
@@ -295,13 +295,13 @@ EndIf
 Select
 	Case $rip_how = "FULL"
 		_ConsoleWriteCRLF("Starting rip for whole DVD...")
-		Local $_toRun = '"' & $_ProgramFilesDir & '\SlySoft\AnyDVD\tcclone.exe" --force --remux --outpath ' & $final_path & ' ' & $dvd_drive & '\VIDEO_TS all'
+		Local $_toRun = '"' & $_ProgramFilesDir & '\SlySoft\AnyDVD\tcclone.exe" --force --remux --outpath "' & $final_path & '" ' & $dvd_drive & '\VIDEO_TS all'
 	Case $rip_how = "MENU"
 		_ConsoleWriteCRLF("Starting rip for Main Movie (DVD Title: " & $mainDvdTitle & ") + Menus...")
-		Local $_toRun = '"' & $_ProgramFilesDir & '\SlySoft\AnyDVD\tcclone.exe" --force --menus --remux --outpath ' & $final_path & ' ' & $dvd_drive & '\VIDEO_TS ' & $mainDvdTitle
+		Local $_toRun = '"' & $_ProgramFilesDir & '\SlySoft\AnyDVD\tcclone.exe" --force --menus --remux --outpath "' & $final_path & '" ' & $dvd_drive & '\VIDEO_TS ' & $mainDvdTitle
 	Case $rip_how = "MAIN"
 		_ConsoleWriteCRLF("Starting rip for Main Movie (DVD Title: " & $mainDvdTitle & ")...")
-		Local $_toRun = '"' & $_ProgramFilesDir & '\SlySoft\AnyDVD\tcclone.exe" --force --remux --outpath ' & $final_path & ' ' & $dvd_drive & '\VIDEO_TS ' & $mainDvdTitle
+		Local $_toRun = '"' & $_ProgramFilesDir & '\SlySoft\AnyDVD\tcclone.exe" --force --remux --outpath "' & $final_path & '" ' & $dvd_drive & '\VIDEO_TS ' & $mainDvdTitle
 EndSelect
 
 $pid = Run($_toRun, @SystemDir, @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD)
