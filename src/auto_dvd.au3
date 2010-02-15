@@ -17,8 +17,8 @@
 #AutoIt3Wrapper_Res_Field=Build Date|%date%
 #AutoIt3Wrapper_Res_Comment=http://code.google.com/p/anydvd-rip-wrapper/
 #AutoIt3Wrapper_Res_Description=AnyDVD Rip Wrapper
-#AutoIt3Wrapper_Res_Fileversion=0.9.18
-#AutoIt3Wrapper_Res_ProductVersion=0.9.18
+#AutoIt3Wrapper_Res_Fileversion=0.9.19
+#AutoIt3Wrapper_Res_ProductVersion=0.9.19
 #AutoIt3Wrapper_Res_Language=1033
 #AutoIt3Wrapper_Res_LegalCopyright=GPL
 #AutoIt3Wrapper_res_requestedExecutionLevel=highestAvailable
@@ -29,7 +29,7 @@
 OnAutoItExitRegister("cleanUp")
 
 Global $g_szName = "AnyDVD Rip Wrapper"
-Global $g_szVersion = "0.9.18"
+Global $g_szVersion = "0.9.19"
 Global $g_szTitle = $g_szName & " " & $g_szVersion
 Global $__gsReportWindowTitle_Debug = $g_szTitle
 Local $dvd_drive = ""
@@ -334,13 +334,6 @@ If IsDeclared("hGUI") Then
 EndIf
 
 While 1
-	$_tccloneCrashDetect = ProcessWaitClose($pid, 1)
-	If $_tccloneCrashDetect == 1 Then
-		If @extended <> 0 Then
-			_MsgBox("Possible crash in TCClone. Please report this error." & @LF & "Exited with error code: " & @extended & @LF & "Command: " & $_toRun)
-			Exit 1
-		EndIf
-	EndIf
 	$STDOUT = StdoutRead($pid)
 	If @error Then ExitLoop
 	$progress = StringRegExp($STDOUT, "P (\d+)% (ts.*)", 1)
