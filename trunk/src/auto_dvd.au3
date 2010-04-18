@@ -8,7 +8,7 @@
 #AutoIt3Wrapper_UPX_Parameters=--ultra-brute
 #AutoIt3Wrapper_Res_Comment=http://code.google.com/p/anydvd-rip-wrapper/
 #AutoIt3Wrapper_Res_Description=AnyDVD Rip Wrapper
-#AutoIt3Wrapper_Res_Fileversion=0.9.20.6
+#AutoIt3Wrapper_Res_Fileversion=0.9.20.11
 #AutoIt3Wrapper_Res_FileVersion_AutoIncrement=p
 #AutoIt3Wrapper_Res_LegalCopyright=GPL
 #AutoIt3Wrapper_Res_Language=1033
@@ -16,26 +16,25 @@
 #AutoIt3Wrapper_Res_Field=Homepage|http://code.google.com/p/anydvd-rip-wrapper/
 #AutoIt3Wrapper_Res_Field=Build Date|%date%
 #AutoIt3Wrapper_Au3Check_Parameters=-d -w 1 -w 2 -w 3 -w 4 -w 5 -w 6
+#AutoIt3Wrapper_Run_Before=echo %fileversion% > ..\build\auto_dvd.ver
 #AutoIt3Wrapper_Run_After=copy "%out%" "..\build\auto_dvd.exe"
 #AutoIt3Wrapper_Run_Tidy=y
 #Tidy_Parameters=/bdir c:\windows\temp\ /kv 1
 #AutoIt3Wrapper_Tidy_Stop_OnError=n
 #AutoIt3Wrapper_Run_Obfuscator=y
-#Obfuscator_Parameters=/cs=1 /cn=1 /cf=1 /cv=1 /sf=1 /sv=1
+#Obfuscator_Parameters=/cs=0 /cn=1 /cf=1 /cv=1 /sf=1 /sv=1
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
 #include <Debug.au3>
 #include <Array.au3>
 #include <GUIComboBox.au3>
-#include <GuiButton.au3>
 #include <GuiConstantsEx.au3>
-#include <WindowsConstants.au3>
 #include <Constants.au3>
 
 OnAutoItExitRegister("cleanUp")
 
 Global $g_szName = "AnyDVD Rip Wrapper"
-Global $g_szVersion = "0.9.20.6"
+Global $g_szVersion = FileGetVersion(@ScriptFullPath, "FileVersion")
 Global $g_szTitle = $g_szName & " " & $g_szVersion
 Global $dvd_drive = ""
 Global $net_path = ""
@@ -50,7 +49,7 @@ Global $STDERR = 0
 Global $_ProgramFilesDir = "C:\Program Files" ; I know AutoIt has a macro for this, but it doesn't work well
 $__gsReportWindowTitle_Debug = $g_szTitle ; Setting Log GUI Title
 
-If WinExists($g_szTitle) Then _MsgBox("Another instance of this program is already running.") ; It's already running
+If WinExists($g_szTitle) Then _MsgBoxAbort("Another instance of this program is already running.") ; It's already running
 
 AutoItWinSetTitle($g_szTitle)
 AutoItSetOption("TrayAutoPause", 0)
@@ -73,14 +72,14 @@ _ConsoleWrite(@CRLF);
 
 If Not FileExists($_ProgramFilesDir & "\SlySoft\AnyDVD\AnyDVD.exe") Then
 	$_isGUI = 1
-	_MsgBox("AnyDVD not found in " & $_ProgramFilesDir & "\SlySoft\AnyDVD!" & @LF & "AnyDVD must be installed for this tool to work." & @LF & @LF & "Please install AnyDVD and try again.")
+	_MsgBoxAbort("AnyDVD not found in " & $_ProgramFilesDir & "\SlySoft\AnyDVD!" & @LF & "AnyDVD must be installed for this tool to work." & @LF & @LF & "Please install AnyDVD and try again.")
 EndIf
 
 If Not FileExists($_ProgramFilesDir & "\SlySoft\AnyDVD\AnyTool.exe") Then
 	Global $retVal = FileInstall(".\AnyTool.exe", $_ProgramFilesDir & "\SlySoft\AnyDVD\")
 	If $retVal == 0 Then
 		$_isGUI = 1
-		_MsgBox("There was a problem extracting the required file AnyTool.exe. Please report this error.")
+		_MsgBoxAbort("There was a problem extracting the required file AnyTool.exe. Please report this error.")
 	EndIf
 EndIf
 
@@ -88,7 +87,7 @@ If Not FileExists($_ProgramFilesDir & "\SlySoft\AnyDVD\tcclone.exe") Then
 	$retVal = FileInstall(".\tcclone.exe", $_ProgramFilesDir & "\SlySoft\AnyDVD\")
 	If $retVal == 0 Then
 		$_isGUI = 1
-		_MsgBox("There was a problem extracting the required file tcclone.exe. Please report this error.")
+		_MsgBoxAbort("There was a problem extracting the required file tcclone.exe. Please report this error.")
 	EndIf
 EndIf
 
@@ -113,18 +112,18 @@ If (IsArray($CmdLine) And $CmdLine[0] > 0) Then
 	If $CmdLine[0] >= 1 Then
 		$dvd_drive = $CmdLine[1]
 		If DriveStatus($dvd_drive) <> "READY" Then
-			_MsgBox("Error! Specified DVD Drive 'NOT READY' or does not contain a disc." & @CRLF);
+			_MsgBoxAbort("Error! Specified DVD Drive 'NOT READY' or does not contain a disc." & @CRLF);
 		EndIf
 	Else
-		_MsgBox("Error! DVD Drive not specified." & @CRLF);
+		_MsgBoxAbort("Error! DVD Drive not specified." & @CRLF);
 	EndIf
 	If $CmdLine[0] >= 2 Then
 		$net_path = $CmdLine[2]
 		If FileExists($net_path) <> 1 Then
-			_MsgBox("Error! Specified Target Path does not exist." & @CRLF);
+			_MsgBoxAbort("Error! Specified Target Path does not exist." & @CRLF);
 		EndIf
 	Else
-		_MsgBox("Error! Target Path not specified." & @CRLF);
+		_MsgBoxAbort("Error! Target Path not specified." & @CRLF);
 	EndIf
 Else
 	_ConsoleWrite(StringUpper(StringRegExpReplace(@ScriptName, ".exe", "")) & " <drive> <destination> [/MAIN|/MENU|/FULL] [/GUI] [/BATCH]" & @CRLF);
@@ -150,7 +149,7 @@ If ($dvd_drive == "" Or $net_path == "") Then
 	GUICtrlCreateLabel("Select DVD Drive:", 24, 26, 100, 20, 0x50020200, 0x00000004)
 	Global $hCombo = _GUICtrlComboBox_Create($h_dvdAuto, "", 24, 46, 312, 21, 0x50010303, 0x00000004)
 	GUICtrlCreateLabel("Target Folder:", 24, 80, 100, 20, 0x50020200, 0x00000004)
-	Global $targetInput = GUICtrlCreateInput("", 24, 100, 312, 20, 0x50010080, 0x00000204)
+	Global $targetInput = GUICtrlCreateInput(RegRead("HKCU\Software\AnyDVD Rip Wrapper", "LastTarget"), 24, 100, 312, 20, 0x50010080, 0x00000204)
 	Global $btnBrowse = GUICtrlCreateButton("Browse...", 258, 120, 78, 23, 0x50010000, 0x00000004)
 	GUICtrlCreateLabel("What to Rip:", 24, 133, 100, 20, 0x50020200, 0x00000004)
 	Global $rdoFullDVD = GUICtrlCreateRadio("Full DVD", 24, 153, 63, 23)
@@ -203,10 +202,13 @@ If ($dvd_drive == "" Or $net_path == "") Then
 				EndSelect
 				If DriveStatus($dvd_drive) <> "READY" Then
 					_MsgBox("Selected DVD Drive does not appear to have a disc loaded!")
+					ContinueLoop
 				ElseIf FileExists($net_path) <> 1 Then
 					_MsgBox("Specified Target Path does not exist!")
+					ContinueLoop
 				ElseIf $rip_how == "" Then
 					_MsgBox("Please select what to save from your DVD!")
+					ContinueLoop
 				Else
 					GUIDelete()
 					ExitLoop
@@ -220,13 +222,14 @@ EndIf
 
 _ConsoleWriteCRLF("Process started...")
 _ConsoleWriteCRLF("")
+RegWrite("HKCU\Software\AnyDVD Rip Wrapper", "LastTarget", "REG_SZ", $net_path)
 _ConsoleWriteCRLF("Toggling AnyDVD to Scan inserted disc.")
 ;; Disable AnyDVD
 RunWait('"' & $_ProgramFilesDir & '\SlySoft\AnyDVD\AnyTool.exe" -d', @SystemDir, @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD)
 ;; Enable AnyDVD
 RunWait('"' & $_ProgramFilesDir & '\SlySoft\AnyDVD\AnyTool.exe" -e', @SystemDir, @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD)
 If @error Then
-	_MsgBox("Unable to control AnyDVD! Please report this error.")
+	_MsgBoxAbort("Unable to control AnyDVD! Please report this error.")
 EndIf
 
 _ConsoleWriteCRLF("Waiting for Drive to become ready...")
@@ -240,6 +243,8 @@ Global $final_path = $net_path & "\" & StringStripWS(DriveGetLabel($dvd_drive), 
 _ConsoleWriteCRLF("")
 _ConsoleWriteCRLF("Using DVD Drive: " & $dvd_drive)
 _ConsoleWriteCRLF("Ripping to Target Path: " & $final_path)
+
+
 
 If FileExists($final_path) <> 0 Then
 	Do
@@ -288,7 +293,7 @@ If ($rip_how == "MENU" Or $rip_how == "MAIN") Then
 
 	If $mainDvdTitle == "" Then
 		;Abort
-		_MsgBox("Unable to determine the Main Movie Title ID!")
+		_MsgBoxAbort("Unable to determine the Main Movie Title ID!")
 	EndIf
 	$pid = -1
 EndIf
@@ -309,7 +314,7 @@ EndSelect
 If $_toRun <> "" Then
 	$pid = Run($_toRun, @SystemDir, @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD)
 Else
-	_MsgBox("Error setting-up rip command.")
+	_MsgBoxAbort("Error setting-up rip command.")
 EndIf
 
 Sleep(1500) ;Just in-case the process starts and exits fast enough for the next eval to pass
@@ -326,7 +331,7 @@ If $pid <= 0 Or ProcessExists($pid) == 0 Then
 		$_msg &= ": " & @LF & $STDOUT & @LF & $STDERR
 	EndIf
 	$_msg &= @LF & "Command: " & $_toRun
-	_MsgBox($_msg)
+	_MsgBoxAbort($_msg)
 EndIf
 
 _ConsoleWriteCRLF("")
@@ -357,15 +362,22 @@ _ConsoleWriteCRLF("")
 _ConsoleWriteCRLF("Rip Done!")
 Sleep(500)
 
-
 Func _MsgBox($szMsg)
 	If $_isGUI Then
 		MsgBox(8208, "Error", $szMsg, $_MsgBoxTimeout)
 	Else
 		_ConsoleWriteError($szMsg & @CRLF)
 	EndIf
-	Exit 1
 EndFunc   ;==>_MsgBox
+
+Func _MsgBoxAbort($szMsg)
+	If $_isGUI Then
+		MsgBox(8208, "Error", $szMsg, $_MsgBoxTimeout)
+	Else
+		_ConsoleWriteError($szMsg & @CRLF)
+	EndIf
+	Exit 1
+EndFunc   ;==>_MsgBoxAbort
 
 Func _ConsoleWriteCRLF($szMsg)
 	If $_isGUI Then
@@ -392,7 +404,6 @@ Func _ConsoleWriteError($szMsg)
 EndFunc   ;==>_ConsoleWriteError
 
 Func cleanUp()
-	;_ConsoleWriteCRLF ( "Abort!" )
 	Sleep(1000)
 	ProcessClose("tcclone.exe")
 EndFunc   ;==>cleanUp
