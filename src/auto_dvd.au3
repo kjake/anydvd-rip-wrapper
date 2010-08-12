@@ -8,7 +8,7 @@
 #AutoIt3Wrapper_UPX_Parameters=--ultra-brute
 #AutoIt3Wrapper_Res_Comment=http://code.google.com/p/anydvd-rip-wrapper/
 #AutoIt3Wrapper_Res_Description=AnyDVD Rip Wrapper
-#AutoIt3Wrapper_Res_Fileversion=0.9.20.11
+#AutoIt3Wrapper_Res_Fileversion=0.9.20.19
 #AutoIt3Wrapper_Res_FileVersion_AutoIncrement=p
 #AutoIt3Wrapper_Res_LegalCopyright=GPL
 #AutoIt3Wrapper_Res_Language=1033
@@ -83,6 +83,14 @@ If Not FileExists($_ProgramFilesDir & "\SlySoft\AnyDVD\AnyTool.exe") Then
 	EndIf
 EndIf
 
+If Not FileExists($_ProgramFilesDir & "\SlySoft\AnyDVD\AnyTool2.exe") Then
+	$retVal = FileInstall(".\AnyTool2.exe", $_ProgramFilesDir & "\SlySoft\AnyDVD\")
+	If $retVal == 0 Then
+		$_isGUI = 1
+		_MsgBoxAbort("There was a problem extracting the required file AnyTool2.exe. Please report this error.")
+	EndIf
+EndIf
+
 If Not FileExists($_ProgramFilesDir & "\SlySoft\AnyDVD\tcclone.exe") Then
 	$retVal = FileInstall(".\tcclone.exe", $_ProgramFilesDir & "\SlySoft\AnyDVD\")
 	If $retVal == 0 Then
@@ -91,7 +99,7 @@ If Not FileExists($_ProgramFilesDir & "\SlySoft\AnyDVD\tcclone.exe") Then
 	EndIf
 EndIf
 
-If (IsArray($CmdLine) And $CmdLine[0] > 0) Then
+If ((IsArray($CmdLine) And $CmdLine[0] > 0) And ($CmdLine[1] <> "/?")) Then
 	If $CmdLine[0] >= 3 Then
 		If _ArraySearch($CmdLine, "/BATCH") > -1 And @error <> 6 Then
 			$_MsgBoxTimeout = 10
@@ -238,28 +246,30 @@ Do
 Until DriveStatus($dvd_drive) == "READY"
 
 Sleep(500)
-Global $final_path = $net_path & "\" & StringStripWS(DriveGetLabel($dvd_drive), 3)
+
+If FileExists($dvd_drive & "\BDMV") == 0 Then
+	Global $final_path = $net_path & "\" & StringStripWS(DriveGetLabel($dvd_drive), 3)
+	If FileExists($final_path) <> 0 Then
+		Do
+			$final_path = $final_path & "-" & Random(111, 999, 1)
+			_ConsoleWriteCRLF("")
+			_ConsoleWriteCRLF("Note: Your target path has been modified because the target path already exists.")
+			_ConsoleWriteCRLF("This may be because DVD Labels like DVD_VIDEO are popular.")
+			_ConsoleWriteCRLF("NEW target path: " & $final_path)
+		Until FileExists($final_path) == 0
+	EndIf
+ElseIf FileExists($dvd_drive & "\BDMV") == 1 Then
+	Global $final_path = $net_path & "\"
+EndIf
 
 _ConsoleWriteCRLF("")
-_ConsoleWriteCRLF("Using DVD Drive: " & $dvd_drive)
+_ConsoleWriteCRLF("Using Drive: " & $dvd_drive)
 _ConsoleWriteCRLF("Ripping to Target Path: " & $final_path)
-
-
-
-If FileExists($final_path) <> 0 Then
-	Do
-		$final_path = $final_path & "-" & Random(111, 999, 1)
-		_ConsoleWriteCRLF("")
-		_ConsoleWriteCRLF("Note: Your target path has been modified because the target path already exists.")
-		_ConsoleWriteCRLF("This may be because DVD Labels like DVD_VIDEO are popular.")
-		_ConsoleWriteCRLF("NEW target path: " & $final_path)
-	Until FileExists($final_path) == 0
-EndIf
 
 Sleep(500)
 _ConsoleWriteCRLF("")
 
-If ($rip_how == "MENU" Or $rip_how == "MAIN") Then
+If (($rip_how == "MENU" Or $rip_how == "MAIN") And FileExists($dvd_drive & "\BDMV") == 0) Then
 	_ConsoleWriteCRLF("Finding Main Movie Title ID...")
 	;; Find Main Titleset
 	Global $pid = Run('"' & $_ProgramFilesDir & '\SlySoft\AnyDVD\tcclone.exe" ' & $dvd_drive & '\VIDEO_TS', @SystemDir, @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD)
@@ -296,6 +306,9 @@ If ($rip_how == "MENU" Or $rip_how == "MAIN") Then
 		_MsgBoxAbort("Unable to determine the Main Movie Title ID!")
 	EndIf
 	$pid = -1
+ElseIf FileExists($dvd_drive & "\BDMV") == 1 Then
+	_ConsoleWriteCRLF("BluRay Disc Detected! Using AnyDVD Ripper instead...")
+	$rip_how = "BDMV"
 EndIf
 
 ;; AnyDVD
@@ -309,6 +322,9 @@ Select
 	Case $rip_how = "MAIN"
 		_ConsoleWriteCRLF("Starting rip for Main Movie (DVD Title: " & $mainDvdTitle & ")...")
 		$_toRun = '"' & $_ProgramFilesDir & '\SlySoft\AnyDVD\tcclone.exe" --force --remux --outpath "' & $final_path & '" ' & $dvd_drive & '\VIDEO_TS ' & $mainDvdTitle
+	Case $rip_how = "BDMV"
+		_ConsoleWriteCRLF("Starting rip for BluRay...")
+		$_toRun = '"' & $_ProgramFilesDir & '\SlySoft\AnyDVD\AnyTool2.exe" ripraw ' & $dvd_drive & ' "' & $final_path & '"'
 EndSelect
 
 If $_toRun <> "" Then
@@ -336,28 +352,29 @@ EndIf
 
 _ConsoleWriteCRLF("")
 
-If $_isGUI Then
-	ProgressOn("Rip Progress", "", "", -1, -1, 18)
-	ProgressSet(0, "0%")
+If $rip_how <> "BDMV" Then
+	If $_isGUI Then
+		ProgressOn("Rip Progress", "", "", -1, -1, 18)
+		ProgressSet(0, "0%")
+	EndIf
+
+	While 1
+		$STDOUT = StdoutRead($pid)
+		If @error Then ExitLoop
+		$progress = StringRegExp($STDOUT, "P (\d+)% (ts.*)", 1)
+		If IsArray($progress) Then
+			Select
+				Case $_isGUI == 1
+					ProgressSet(Int($progress[0]), String(Int($progress[0])) & "%" & @CRLF & $progress[1])
+				Case $_isGUI == 0
+					_ConsoleWrite(@CR & String(Int($progress[0])) & "% " & $progress[1])
+			EndSelect
+			Sleep(250)
+		EndIf
+	WEnd
 EndIf
 
-While 1
-	$STDOUT = StdoutRead($pid)
-	If @error Then ExitLoop
-	$progress = StringRegExp($STDOUT, "P (\d+)% (ts.*)", 1)
-	If IsArray($progress) Then
-		Select
-			Case $_isGUI == 1
-				ProgressSet(Int($progress[0]), String(Int($progress[0])) & "%" & @CRLF & $progress[1])
-			Case $_isGUI == 0
-				_ConsoleWrite(@CR & String(Int($progress[0])) & "% " & $progress[1])
-		EndSelect
-		Sleep(250)
-	EndIf
-WEnd
-
 ProcessWaitClose($pid)
-_ConsoleWriteCRLF("")
 _ConsoleWriteCRLF("")
 _ConsoleWriteCRLF("Rip Done!")
 Sleep(500)
