@@ -1,4 +1,4 @@
-#Region ;**** Directives created by AutoIt3Wrapper_GUI ****
+#region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=Icon.ico
 #AutoIt3Wrapper_Outfile=c:\auto_dvd.exe
 #AutoIt3Wrapper_Compression=4
@@ -8,7 +8,7 @@
 #AutoIt3Wrapper_UPX_Parameters=--ultra-brute
 #AutoIt3Wrapper_Res_Comment=http://code.google.com/p/anydvd-rip-wrapper/
 #AutoIt3Wrapper_Res_Description=AnyDVD Rip Wrapper
-#AutoIt3Wrapper_Res_Fileversion=0.9.20.19
+#AutoIt3Wrapper_Res_Fileversion=0.9.20.23
 #AutoIt3Wrapper_Res_FileVersion_AutoIncrement=p
 #AutoIt3Wrapper_Res_LegalCopyright=GPL
 #AutoIt3Wrapper_Res_Language=1033
@@ -23,7 +23,7 @@
 #AutoIt3Wrapper_Tidy_Stop_OnError=n
 #AutoIt3Wrapper_Run_Obfuscator=y
 #Obfuscator_Parameters=/cs=0 /cn=1 /cf=1 /cv=1 /sf=1 /sv=1
-#EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
+#endregion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
 #include <Debug.au3>
 #include <Array.au3>
@@ -127,9 +127,6 @@ If ((IsArray($CmdLine) And $CmdLine[0] > 0) And ($CmdLine[1] <> "/?")) Then
 	EndIf
 	If $CmdLine[0] >= 2 Then
 		$net_path = $CmdLine[2]
-		If FileExists($net_path) <> 1 Then
-			_MsgBoxAbort("Error! Specified Target Path does not exist." & @CRLF);
-		EndIf
 	Else
 		_MsgBoxAbort("Error! Target Path not specified." & @CRLF);
 	EndIf
@@ -211,9 +208,6 @@ If ($dvd_drive == "" Or $net_path == "") Then
 				If DriveStatus($dvd_drive) <> "READY" Then
 					_MsgBox("Selected DVD Drive does not appear to have a disc loaded!")
 					ContinueLoop
-				ElseIf FileExists($net_path) <> 1 Then
-					_MsgBox("Specified Target Path does not exist!")
-					ContinueLoop
 				ElseIf $rip_how == "" Then
 					_MsgBox("Please select what to save from your DVD!")
 					ContinueLoop
@@ -226,6 +220,11 @@ If ($dvd_drive == "" Or $net_path == "") Then
 				Exit
 		EndSelect
 	WEnd
+EndIf
+
+If FileExists($net_path) <> 1 Then
+	_ConsoleWriteCRLF("Specified Target Path does not exist...creating...")
+	DirCreate($net_path)
 EndIf
 
 _ConsoleWriteCRLF("Process started...")
